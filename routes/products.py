@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import List
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
@@ -5,7 +6,8 @@ from config.db import conn
 from passlib.context import CryptContext
 from models.db_p import products, user
 from modelo.m_pro import producto 
-from modelo.m_user import Users, Login
+from modelo.m_user import Token, Users, Login
+from modelo.token import create_access_token
 import json
 
 product = APIRouter()
@@ -35,9 +37,11 @@ def index(id:str):
 @product.delete("/products/{id}")  
 def delete(id : str):
     product = conn.execute(products.delete().where(products.c.id == id))
-    if product is None:
+    if product.rowcount == 0:
             raise HTTPException(status_code=404, detail="Product not found")
-    return product 
+    conn.commit()
+    raise HTTPException(status_code=200, detail="Product delete")
+
 
 @product.put("/products/{id}",response_model=producto)  
 def index(id:str, p: producto):
@@ -62,11 +66,17 @@ def get_user(users:Users):
 @product.post("/usuario/login",response_model=Login)  
 def get_user(users:Login):
     
-    user_db = conn.execute(user.select().where(user.c.username == users.username)).first()
+    try:
+     user_db = conn.execute(user.select().where(user.c.username == users.username)).first()
         
-    if not user_db or not pwd_context.verify(users.password, user_db.password):
+     if not user_db or not pwd_context.verify(users.password, user_db.password):
         raise HTTPException(409,"Incorrect username or password") 
-    conn.commit()
-    raise HTTPException(status_code=200, detail="login")
+     access_token = create_access_token(
+        data={"sub": users.username}
+    )
+     raise HTTPException(status_code=200, detail=("token",access_token, "token_type","bearer"))
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+    #raise HTTPException(status_code=200, detail="login")
 
 
