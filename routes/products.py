@@ -5,7 +5,7 @@ from config.db import conn
 from passlib.context import CryptContext
 from models.db_p import products, user
 from modelo.m_pro import producto 
-from modelo.m_user import Users
+from modelo.m_user import Users, Login
 import json
 
 product = APIRouter()
@@ -48,11 +48,25 @@ def index(id:str, p: producto):
 
 @product.post("/usuario",response_model=Users)  
 def get_user(users:Users):
+    existe = conn.execute(user.select().where(user.c.username == users.username)).first()
+    if existe:
+        raise HTTPException(409,"usuario ya se encuentra en uso")
+    
     new_users = {"username":users.username}
     new_users["password"] = pwd_context.hash(users.password.encode("utf-8"))
     result = conn.execute(user.insert().values(new_users)) 
     query = conn.execute(user.select().where(user.c.id == result.lastrowid)).first()
     conn.commit()
     return query
+
+@product.post("/usuario/login",response_model=Login)  
+def get_user(users:Login):
+    
+    user_db = conn.execute(user.select().where(user.c.username == users.username)).first()
+        
+    if not user_db or not pwd_context.verify(users.password, user_db.password):
+        raise HTTPException(409,"Incorrect username or password") 
+    conn.commit()
+    raise HTTPException(status_code=200, detail="login")
 
 
