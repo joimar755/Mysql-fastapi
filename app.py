@@ -4,5 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI() 
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "*"
+    ],  # En producción, especifica los dominios permitidos en lugar de "*"
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 app.include_router(product)
 

@@ -17,7 +17,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @product.get("/products",response_model=List[producto])  
 def getproduct():
-    return conn.execute(products.select()).fetchall()
+    product = conn.execute(products.select()).fetchall()
+    return product
 
 @product.post("/products",response_model=producto)  
 def getnew(p: producto):
@@ -48,7 +49,8 @@ def index(id:str, p: producto):
     new_products = {"name":p.name,"price":p.price,"stock":p.stock,"category_id":p.category_id}
     result = conn.execute(products.update().values(new_products).where(products.c.id == id))
     conn.commit()
-    return conn.execute(products.select().where(products.c.id == id)).first() 
+    update  = conn.execute(products.select().where(products.c.id == id)).first()
+    return  update
 
 @product.post("/usuario",response_model=Users)  
 def get_user(users:Users):
@@ -66,17 +68,15 @@ def get_user(users:Users):
 @product.post("/usuario/login",response_model=Login)  
 def get_user(users:Login):
     
-    try:
+    
      user_db = conn.execute(user.select().where(user.c.username == users.username)).first()
         
      if not user_db or not pwd_context.verify(users.password, user_db.password):
         raise HTTPException(409,"Incorrect username or password") 
      access_token = create_access_token(
         data={"sub": users.username}
-    )
+     )
      raise HTTPException(status_code=200, detail=("token",access_token, "token_type","bearer"))
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=str(error))
     #raise HTTPException(status_code=200, detail="login")
 
 
