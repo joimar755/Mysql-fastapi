@@ -56,7 +56,7 @@ def index(id:str, p: producto):
 def get_user(users:Users):
     existe = conn.execute(user.select().where(user.c.username == users.username)).first()
     if existe:
-        raise HTTPException(409,"usuario ya se encuentra en uso")
+        return HTTPException(409,"usuario ya se encuentra en uso")
     
     new_users = {"username":users.username}
     new_users["password"] = pwd_context.hash(users.password.encode("utf-8"))
@@ -67,7 +67,6 @@ def get_user(users:Users):
 
 @product.post("/usuario/login",response_model=Login)  
 def get_user(users:Login):
-    
     
      user_db = conn.execute(user.select().where(user.c.username == users.username)).first()
         
