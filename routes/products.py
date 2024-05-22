@@ -2,6 +2,7 @@ from datetime import timedelta
 from typing import List
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from config.db import conn
 from passlib.context import CryptContext
 from models.db_p import products, user
@@ -56,8 +57,8 @@ def index(id:str, p: producto):
 def get_user(users:Users):
     existe = conn.execute(user.select().where(user.c.username == users.username)).first()
     if existe:
-        return HTTPException(409,"usuario ya se encuentra en uso")
-    
+      return JSONResponse("usuario ya se encuentra en uso")
+  
     new_users = {"username":users.username}
     new_users["password"] = pwd_context.hash(users.password.encode("utf-8"))
     result = conn.execute(user.insert().values(new_users)) 
@@ -71,11 +72,15 @@ def get_user(users:Login):
      user_db = conn.execute(user.select().where(user.c.username == users.username)).first()
         
      if not user_db or not pwd_context.verify(users.password, user_db.password):
+        return JSONResponse("Incorrect username or password")
         raise HTTPException(409,"Incorrect username or password") 
+     
      access_token = create_access_token(
         data={"sub": users.username}
      )
-     raise HTTPException(status_code=200, detail=("token",access_token, "token_type","bearer"))
+     token = {"access_token":access_token, "token_type":"bearer"}
+     return JSONResponse(token)
+
     #raise HTTPException(status_code=200, detail="login")
 
 
